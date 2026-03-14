@@ -32,7 +32,6 @@ boards = {
 }
 
 while running:
-
     events = pygame.event.get()
     for event in events:
         if event.type == pygame.QUIT:
@@ -75,6 +74,7 @@ while running:
     else: # Mainscreen Program every tick
         ui.create_display(392,20,"Turn: "+str(turn),120, 40)
         ui.create_button(512,20,"Next Turn")
+        ui.create_button(10,960,"Help")
 
 
     if "hi!" in state["buttons"]:

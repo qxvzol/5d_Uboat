@@ -35,6 +35,9 @@ class TimelineUI:
         self.images = []
         self.sprite_clicked= None
 
+        self.help_background = pygame.Surface((width, height))
+        self.help_background.fill((40,40,40))
+
         self.subscreen_background = pygame.image.load(
             "Images/subscreen_bg.png"
         ).convert()
@@ -164,7 +167,7 @@ class TimelineUI:
                             self.current_square = key
                             self.current_screen = "sub"
 
-                elif self.current_screen == "sub":
+                elif self.current_screen in ["sub","help"]:
 
                     if pygame.Rect(10,10,100,40).collidepoint(mouse):
                         self.current_screen = "main"
@@ -180,6 +183,13 @@ class TimelineUI:
                 for b in self.buttons:
                     if b.rect.collidepoint(mouse):
                         clicked_buttons.append(b.text)
+
+                for b in self.buttons:
+                    if b.rect.collidepoint(mouse):
+                        clicked_buttons.append(b.text)
+
+                        if b.text == "Help":
+                            self.current_screen = "help"
 
         # ---------------------------
         # DRAW
@@ -229,6 +239,17 @@ class TimelineUI:
 
             for image, rect in self.images:
                 screen.blit(image, rect)
+
+        elif self.current_screen == "help":
+
+            screen.blit(self.help_background,(0,0))
+
+            back_button = pygame.Rect(10,10,100,40)
+
+            pygame.draw.rect(screen,(200,80,80),back_button)
+
+            txt = self.font.render("Back",True,(255,255,255))
+            screen.blit(txt,(35,20))
 
         for d in self.displays:
 
