@@ -34,7 +34,6 @@ boards = {
 while running:
 
     events = pygame.event.get()
-
     for event in events:
         if event.type == pygame.QUIT:
             running = False
@@ -49,11 +48,27 @@ while running:
     state = ui.update(screen,events)
     square_loc=state["square"]
     screen_stat=state["screen"]
+    sprite_clicked=state["sprite_clicked"]
     # Subscreen Program every tick
     if screen_stat=="sub":
         value=boards[square_loc]
         for sprites in value[2]:
-            ui.create_sprite(sprites[0], sprites[3][0], sprites[3][1], sprites[5])
+            if sprites[5]!=None:
+                ui.create_sprite(sprites[0], sprites[3][0], sprites[3][1], sprites[5])
+                if 0<((sprites[2][0])/(sprites[2][1]))<0.5:
+                    x=sprites[3][0]*32-32
+                    y=sprites[3][1]*32-64
+                    ui.draw_image("Smoke_damage",x,y)
+            if sprites[2][0]<=0:
+                sprites[2][0]-=1
+                if -360<sprites[2][0]<=0:
+                    sprites[5]="Smoke_intense"
+                elif -720<sprites[2][0]<=-360:
+                    sprites[5]="Smoke_weak"
+                else:
+                    value[2].remove(sprites)
+
+
         ui.create_display(332,20,"Turn: "+str(square_loc[0]),120, 40)
         ui.create_display(452,20,"Timeline: "+str(square_loc[1]),120, 40)
         ui.create_display(572,20,"Current Turn: "+str(turn),120, 40)
@@ -67,16 +82,20 @@ while running:
     if "awesome!!1!!" in state["buttons"]:
         print("Button clicked!")
 
-
-    sprite_clicked=state["sprite_clicked"]
+    
     if sprite_clicked!=None:
         value=(boards[square_loc])[2]
         for id in value:
             if id[0]==sprite_clicked:
                 if id[4]=="UB":
                     ui.create_display(20,964,"Typle: Uboat",200, 40)
+                    x=id[3][0]*32-16
+                    y=id[3][1]*32-16
+                    ui.create_circle(x,y,200)
                 else:
                     ui.create_display(20,964,"Type: "+id[5],200, 40)
+
+
     pygame.display.flip()
     clock.tick(60)
 

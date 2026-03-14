@@ -11,7 +11,9 @@ class TimelineUI:
         pygame.font.init()
         self.font = pygame.font.SysFont(None, 24)
         #Icon cache
-        names=[["Uboat.png",50,10], ["Submerged.png",50,10], ["Merchant.png",60,20], ["Destroyer.png",50,15], ["Carrier.png",100,30], ["Battleship.png",100,30], ["Aircraft.png",40,30]]
+        names=[["Uboat.png",50,10], ["Submerged.png",50,10], ["Merchant.png",60,20], ["Destroyer.png",50,15], ["Carrier.png",100,30],
+        ["Battleship.png",100,30], ["Aircraft.png",40,30], ["Smoke_intense.png",75,100], ["Smoke_weak.png",50,60], ["Explosion.png",20,20], ["Smoke_damage.png",30,50]
+        ]
         self.image_cache = {}
         for name in names:
             img = pygame.image.load("Images/" + name[0]).convert_alpha()
@@ -30,6 +32,7 @@ class TimelineUI:
         self.sprites = {}
         self.sp_info=[]
         self.circles = []
+        self.images = []
         self.sprite_clicked= None
 
         self.subscreen_background = pygame.image.load(
@@ -135,6 +138,12 @@ class TimelineUI:
         self.circles.append(c)
 
         return c
+    
+    def draw_image(self, icon, x, y):
+        icon=str(icon+".png")
+        image = self.image_cache[icon]
+        rect = image.get_rect(topleft=(x, y))
+        self.images.append((image, rect))
 
     # -------------------------------------------------
     # MAIN UPDATE FUNCTION
@@ -214,10 +223,12 @@ class TimelineUI:
                             if in_range:
                                 sprite_visible.append(sp2[0])
 
-            #print(sprite_visible)
             for key,sp in self.sprites.items():
                 if key in sprite_visible:
                     screen.blit(sp.image,sp.rect)
+
+            for image, rect in self.images:
+                screen.blit(image, rect)
 
         for d in self.displays:
 
@@ -255,6 +266,7 @@ class TimelineUI:
         self.lines=[]
         self.sp_info=[]
         self.circles = []
+        self.images = []
 
         return {
             "screen": self.current_screen,
