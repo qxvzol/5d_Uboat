@@ -1,4 +1,5 @@
 import pygame
+import math
 
 class TimelineUI:
 
@@ -9,17 +10,27 @@ class TimelineUI:
 
         pygame.font.init()
         self.font = pygame.font.SysFont(None, 24)
+        #Icon cache
+        names=[["Uboat.png",50,10], ["Submerged.png",50,10], ["Merchant.png",60,20], ["Destroyer.png",50,15], ["Carrier.png",100,30], ["Battleship.png",100,30], ["Aircraft.png",40,30]]
+        self.image_cache = {}
+        for name in names:
+            img = pygame.image.load("Images/" + name[0]).convert_alpha()
+            img = pygame.transform.scale(img, (name[1],name[2]))
+            self.image_cache[name[0]] = img
 
         # state
         self.current_screen = "main"
         self.current_square = None
 
         # data
-        self.squares = []
+        self.squares = {}
         self.lines = []
         self.displays = []
         self.buttons = []
         self.sprites = {}
+        self.sp_info=[]
+        self.circles = []
+        self.sprite_clicked= None
 
         self.subscreen_background = pygame.image.load(
             "Images/subscreen_bg.png"
@@ -42,13 +53,12 @@ class TimelineUI:
             self.timeline = timeline
 
     class Sprite:
-        def __init__(self, x, y):
-            self.image = pygame.Surface((40, 40))
-            self.image.fill((255,255,255))
+        def __init__(self, x, y, image):
+            self.image = image
             self.rect = self.image.get_rect(topleft=(x,y))
 
     class Display:
-        def __init__(self, x, y, text, width=120, height=40):
+        def __init__(self, x, y, text, width, height):
             self.rect = pygame.Rect(x,y,width,height)
             self.text = text
 
@@ -58,28 +68,47 @@ class TimelineUI:
             self.text = text
             self.clicked = False
 
+    class Circle:
+        def __init__(self, x, y, radius, color, alpha):
+            self.x = x
+            self.y = y
+            self.radius = radius
+            self.color = color
+            self.alpha = alpha
+
     # -------------------------------------------------
     # CREATION FUNCTIONS
     # -------------------------------------------------
 
-    def create_square(self, x, y, text, turn=1, timeline=1):
+    def create_square(self, turn, timeline):
+        text=str(("Turn "+str(turn)+", Line "+str(timeline)))
+        x=turn*100
+        y=timeline*100-40
         sq = self.Square(x,y,text,turn,timeline)
-        self.squares.append(sq)
-        self.sprites[sq] = []
+        self.squares[(turn,timeline)]=sq
         return sq
 
-    def draw_line(self, sq1, sq2):
-        x1,y1 = sq1.rect.center
-        x2,y2 = sq2.rect.center
-        self.lines.append((x1,y1,x2,y2))
+    def create_line(self, k1, k2, color):
+        sq1 = self.squares[k1]
+        sq2 = self.squares[k2]
 
-    def create_sprite(self, square, x, y):
-        sp = self.Sprite(x,y)
-        self.sprites[square].append(sp)
+        x1, y1 = sq1.rect.center
+        x2, y2 = sq2.rect.center
+
+        self.lines.append([(x1, y1), (x2, y2),color])
+
+    def create_sprite(self, id, x, y, icon):
+        x=(x*32)-48
+        y=(y*32)-32
+        self.sp_info.append([id,icon,x,y])
+        icon=str(icon+".png")
+        image = self.image_cache[icon]
+        sp = self.Sprite(x,y, image)
+        self.sprites[id]=sp
         return sp
 
-    def create_display(self, x, y, text):
-        d = self.Display(x,y,text)
+    def create_display(self, x, y, text, width, height):
+        d = self.Display(x,y,text, width, height)
         self.displays.append(d)
         return d
 
@@ -87,6 +116,25 @@ class TimelineUI:
         b = self.Button(x,y,text)
         self.buttons.append(b)
         return b
+    
+    def check_range(self,sp1,sp2,range):
+        x=abs(((sp1[2])-(sp2[2]))**2)
+        y=abs(((sp1[3])-(sp2[3]))**2)
+        r=x+y
+        r=math.sqrt(r)
+        if r>range:
+            in_range=False
+        else:
+            in_range=True
+        return in_range
+    
+    def create_circle(self, x, y, radius, color=(200,50,50), alpha=100):
+
+        c = self.Circle(x, y, radius, color, alpha)
+
+        self.circles.append(c)
+
+        return c
 
     # -------------------------------------------------
     # MAIN UPDATE FUNCTION
@@ -95,7 +143,6 @@ class TimelineUI:
     def update(self, screen, events):
 
         clicked_buttons = []
-
         mouse = pygame.mouse.get_pos()
 
         for event in events:
@@ -103,10 +150,9 @@ class TimelineUI:
             if event.type == pygame.MOUSEBUTTONDOWN:
 
                 if self.current_screen == "main":
-
-                    for sq in self.squares:
+                    for key, sq in self.squares.items():
                         if sq.rect.collidepoint(mouse):
-                            self.current_square = sq
+                            self.current_square = key
                             self.current_screen = "sub"
 
                 elif self.current_screen == "sub":
@@ -114,6 +160,13 @@ class TimelineUI:
                     if pygame.Rect(10,10,100,40).collidepoint(mouse):
                         self.current_screen = "main"
                         self.current_square = None
+                    else:
+                        for key, sp in self.sprites.items():
+                            if sp.rect.collidepoint(mouse):
+                                self.clicked_sprite = key
+                                break
+                            self.clicked_sprite = None
+                        
 
                 for b in self.buttons:
                     if b.rect.collidepoint(mouse):
@@ -126,11 +179,11 @@ class TimelineUI:
         screen.fill((30,30,30))
 
         if self.current_screen == "main":
-
+            self.clicked_sprite = None
             for line in self.lines:
-                pygame.draw.line(screen,(200,200,200),line[:2],line[2:],2)
+                pygame.draw.line(screen,line[2],line[0],line[1],2)
 
-            for sq in self.squares:
+            for sq in self.squares.values():
 
                 pygame.draw.rect(screen,(100,200,255),sq.rect)
 
@@ -150,8 +203,21 @@ class TimelineUI:
             txt = self.font.render("Back",True,(255,255,255))
             screen.blit(txt,(35,20))
 
-            for sp in self.sprites[self.current_square]:
-                screen.blit(sp.image,sp.rect)
+            sprite_visible=[]
+            in_range=False
+            for sp1 in self.sp_info:
+                if sp1[1]=="Uboat":
+                    sprite_visible.append(sp1[0])
+                    for sp2 in self.sp_info:
+                        if sp2[1]!="Uboat":
+                            in_range=self.check_range(sp1,sp2,200)
+                            if in_range:
+                                sprite_visible.append(sp2[0])
+
+            #print(sprite_visible)
+            for key,sp in self.sprites.items():
+                if key in sprite_visible:
+                    screen.blit(sp.image,sp.rect)
 
         for d in self.displays:
 
@@ -169,8 +235,30 @@ class TimelineUI:
             txt = self.font.render(b.text,True,(255,255,255))
             screen.blit(txt,txt.get_rect(center=b.rect.center))
 
+        for c in self.circles:
+            temp_surface = pygame.Surface((c.radius*2, c.radius*2), pygame.SRCALPHA)
+
+            pygame.draw.circle(
+                temp_surface,
+                (*c.color, c.alpha),
+                (c.radius, c.radius),
+                c.radius
+            )
+
+            screen.blit(temp_surface, (c.x - c.radius, c.y - c.radius))
+
+        # Clears lists of drawn items
+        self.displays=[]
+        self.buttons=[]
+        self.sprites={}
+        self.squares={}
+        self.lines=[]
+        self.sp_info=[]
+        self.circles = []
+
         return {
             "screen": self.current_screen,
             "square": self.current_square,
-            "buttons": clicked_buttons
+            "buttons": clicked_buttons,
+            "sprite_clicked": self.clicked_sprite
         }
