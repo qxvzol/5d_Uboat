@@ -1,6 +1,7 @@
 import pygame
 from GUI import TimelineUI
 import copy
+import math
 
 pygame.init()
 #Creates screen and clock
@@ -10,6 +11,7 @@ clock = pygame.time.Clock()
 ui = TimelineUI()
 
 grey=(180,180,180)
+MOVEMENT_FACTOR=0.002
 
 running = True
 snapshot_time = 0.0
@@ -22,6 +24,12 @@ def clamp(value,min,max):
         value=min
     return value
 
+def convert_movement(speed,head):
+    head=head*(math.pi/180)
+    x=math.sin(head)*speed*MOVEMENT_FACTOR
+    y=math.cos(head)*speed*MOVEMENT_FACTOR
+    return x,-y
+
 # Main storage for board info
 
 class Board:
@@ -31,38 +39,20 @@ class Board:
         self.alert = alert
         self.units = units
 
-    def clone(self):
-        return Board(
-            self.alert,
-            [u.clone() for u in self.units]
-        )
-
 class Unit:
-    __slots__ = ("ID", "HP", "speed", "coord", "type", "name", "visible", "suspicion", "status")
+    __slots__ = ("ID", "HP", "speed", "head", "coord", "type", "name", "visible", "suspicion", "status")
 
-    def __init__(self, ID, HP, speed, coord, type, name, visible, suspicion, status):
+    def __init__(self, ID, HP, speed, head, coord, type, name, visible, suspicion, status):
         self.ID = ID
         self.HP = HP
         self.speed = speed
+        self.head = head
         self.coord = coord
         self.type = type
         self.name = name
         self.visible = visible
         self.suspicion = suspicion
         self.status = status
-
-    def clone(self):
-        return Unit(
-            self.ID,
-            self.HP.copy(),
-            self.speed.copy(),
-            self.coord.copy(),
-            self.type,
-            self.name,
-            self.visible,
-            self.suspicion,
-            self.status
-        )
 
 progression=False
 latest_board=[(1,1),(1,2)]
@@ -71,12 +61,12 @@ boards = {
     (1, 1): Board(
         1,
         [
-            Unit(1, [100,100], [0,20], [500, 350], "Uboat", "U-69", True, 0, ""),
-            Unit(2, [40,120], [8,12], [500, 500], "Merchant", "SS Empire Bell", True, 0, "convoy"),
-            Unit(3, [150,150], [8,35], [500, 600], "Destroyer", "HMS Cockchafer", True, 0, "hunting"),
-            Unit(4, [0,600], [8,30], [400, 500], "Carrier", "HMS Ark Royal", True, 0.1, "fleeing"),
-            Unit(5, [1000,1000], [8,30], [600, 500], "Battleship", "HMS Warspite", True, 0, "fleeing"),
-            Unit(6, [100,100], [120,120], [600, 600], "Aircraft", "", True, 0, "patrolling"),
+            Unit(1, [100,100], [0,20], 0, [500, 350], "Uboat", "U-69", True, 0, ""),
+            Unit(2, [40,120], [8,12], 0, [500, 500], "Merchant", "SS Empire Bell", True, 0, "convoy"),
+            Unit(3, [150,150], [8,35], 0, [500, 600], "Destroyer", "HMS Cockchafer", True, 0, "hunting"),
+            Unit(4, [0,600], [8,25], 0, [400, 500], "Carrier", "HMS Ark Royal", True, 0.1, "fleeing"),
+            Unit(5, [1000,1000], [25,25], 315, [500, 500], "Battleship", "HMS Warspite", True, 0, "fleeing"),
+            Unit(6, [100,100], [120,120], 0, [600, 600], "Aircraft", "", True, 0, "patrolling"),
         ]
     ),
     (0, 2): Board(1,[]),
@@ -134,7 +124,7 @@ while running:
                     color=(20*sprites.suspicion+180,-130*sprites.suspicion+180,-130*sprites.suspicion+180)
                     ui.create_display(sprites.coord[0]-60,sprites.coord[1]-48,"",120,20, grey)
                     ui.create_display(sprites.coord[0]-(sprites.suspicion*60),sprites.coord[1]-48,"",sprites.suspicion*120,20, color)
-                ui.create_sprite(sprites.ID, sprites.coord[0], sprites.coord[1], sprites.type)
+                ui.create_sprite(sprites.ID, sprites.coord[0], sprites.coord[1], sprites.type, sprites.head)
                 if 0<((sprites.HP[0])/(sprites.HP[1]))<0.5:
                     x=sprites.coord[0]-8
                     y=sprites.coord[1]-16
@@ -148,6 +138,12 @@ while running:
     #Subscreen program running when board is progressing
         if progression:
             for sprites in value.units:
+                x,y=convert_movement(sprites.speed[0],sprites.head)
+                sprites.coord[0]+=x
+                sprites.coord[1]+=y
+                if not ((0<sprites.coord[0]<1000) and (0<sprites.coord[1]<1000)):
+                    value.units.remove(sprites)
+
                 if sprites.HP[0]<=0:
                     sprites.HP[0]-=1
                     if -360<sprites.HP[0]<=0:
@@ -166,13 +162,13 @@ while running:
                     ui.create_display(20,964,"Type: Uboat",180, 20, grey)
                     ui.create_display(20,984,"Name: "+str(unit.name),180, 20, grey)
                     ui.create_display(200,964,"Speed: "+str(unit.speed[0])+"/"+str(unit.speed[1]),180, 20, grey)
-                    ui.create_display(200,984,str(unit.coord),180, 20, grey)
+                    ui.create_display(200,984,str(math.floor(unit.coord[0]))+","+str(math.floor(unit.coord[1])),180, 20, grey)
                     ui.create_circle(unit.coord[0],unit.coord[1],200)
                 elif unit.type in ["Battleship","Carrier","Merchant","Destroyer"]:
                     ui.create_display(20,964,"Type: "+str(unit.type),180, 20, grey)
                     ui.create_display(20,984,"Name: "+str(unit.name),180, 20, grey)
                     ui.create_display(200,964,"Speed: "+str(unit.speed[0])+"/"+str(unit.speed[1]),180, 20, grey)
-                    ui.create_display(200,984,str(unit.coord),180, 20, grey)
+                    ui.create_display(200,984,str(math.floor(unit.coord[0]))+","+str(math.floor(unit.coord[1])),180, 20, grey)
                     ui.create_display(380,964,"Status: "+str(unit.status),180, 20, grey)
                     ui.create_button(380,984,"Target Ship",180, 20)
                     ui.create_button(560,964,"Fire Torpedo",180, 40)
@@ -180,7 +176,7 @@ while running:
                     ui.create_display(20,964,"Type: Aircraft",180, 20, grey)
                     ui.create_display(20,984,"Status: "+str(unit.status),180, 20, grey)
                     ui.create_display(200,964,"Speed: "+str(unit.speed[0])+"/"+str(unit.speed[1]),180, 20, grey)
-                    ui.create_display(200,984,str(unit.coord),180, 20, grey)
+                    ui.create_display(200,984,str(math.floor(unit.coord[0]))+","+str(math.floor(unit.coord[1])),180, 20, grey)
 
 
     #Pygame clock counter

@@ -11,17 +11,17 @@ class TimelineUI:
         pygame.font.init()
         self.font = pygame.font.SysFont(None, 24)
         #Icon cache
-        names=[["Uboat.png",35,10],
-                ["Submerged.png",35,10],
-                ["Merchant.png",40,14],
-                ["Destroyer.png",35,12],
-                ["Carrier.png",60,16],
-                ["Battleship.png",60,16],
-                ["Aircraft.png",25,20],
-                ["Smoke_intense.png",60,80],
-                ["Smoke_weak.png",40,50],
-                ["Explosion.png",15,15],
-                ["Smoke_damage.png",25,40]
+        names=[["Uboat.png",30,8],
+                ["Submerged.png",30,8],
+                ["Merchant.png",30,10],
+                ["Destroyer.png",30,10],
+                ["Carrier.png",50,14],
+                ["Battleship.png",50,14],
+                ["Aircraft.png",18,20],
+                ["Smoke_intense.png",50,65],
+                ["Smoke_weak.png",30,40],
+                ["Explosion.png",12,12],
+                ["Smoke_damage.png",20,30]
         ]
         self.image_cache = {}
         for name in names:
@@ -103,10 +103,15 @@ class TimelineUI:
                 del self.points[key]
                 break
 
-    def create_sprite(self, id, x, y, icon):
+    def create_sprite(self, id, x, y, icon, head):
         self.sp_info.append([id,icon,x,y])
         icon=str(icon+".png")
         image = self.image_cache[icon]
+        if head>180:
+            flip=True
+        else:
+            flip=False
+        image = pygame.transform.flip(image, flip, False)
         sp = self.Sprite(x,y, image)
         self.sprites[id]=sp
         return sp
