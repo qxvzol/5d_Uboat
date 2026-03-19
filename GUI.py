@@ -66,9 +66,10 @@ class TimelineUI:
             self.rect = self.image.get_rect(center=(x,y))
 
     class Display:
-        def __init__(self, x, y, text, width, height):
+        def __init__(self, x, y, text, width, height, color):
             self.rect = pygame.Rect(x,y,width,height)
             self.text = text
+            self.color = color
 
     class Button:
         def __init__(self, x, y, text, width, height):
@@ -110,8 +111,8 @@ class TimelineUI:
         self.sprites[id]=sp
         return sp
 
-    def create_display(self, x, y, text, width, height):
-        d = self.Display(x,y,text, width, height)
+    def create_display(self, x, y, text, width, height, color):
+        d = self.Display(x,y,text, width, height, color)
         self.displays.append(d)
         return d
 
@@ -143,6 +144,7 @@ class TimelineUI:
 
     def update_square(self,location):
         self.current_square=(location)
+
 
     # -------------------------------------------------
     # MAIN UPDATE FUNCTION
@@ -203,7 +205,7 @@ class TimelineUI:
                 end_square = pygame.Rect(points[1][0]+1,points[1][1]-3,9,9)
                 pygame.draw.rect(screen, (100, 200, 255), end_square)
                 self.end_squares[key]=end_square
-                self.create_display(key[0][0]+5,key[0][1]*32+22,"Timeline: "+str(key[0][1]),100,20)
+                self.create_display(key[0][0]+5,key[0][1]*32+22,"Timeline: "+str(key[0][1]),100,20, (180,180,180))
         elif self.current_screen == "sub":
 
             screen.blit(self.subscreen_background,(0,0))
@@ -246,7 +248,7 @@ class TimelineUI:
 
         for d in self.displays:
 
-            pygame.draw.rect(screen,(180,180,180),d.rect)
+            pygame.draw.rect(screen,d.color,d.rect)
             pygame.draw.rect(screen,(0,0,0),d.rect,2)
 
             txt = self.font.render(d.text,True,(0,0,0))
