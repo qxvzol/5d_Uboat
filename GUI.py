@@ -32,6 +32,7 @@ class TimelineUI:
         # state
         self.current_screen = "main"
         self.current_square = None
+        self.movement = None
 
         # data
         self.points = {}
@@ -43,6 +44,7 @@ class TimelineUI:
         self.images = []
         self.end_squares = {}
         self.clicked_sprite= None
+        self.teleport = None
 
         self.help_background = pygame.Surface((width, height))
         self.help_background.fill((40,40,40))
@@ -103,11 +105,11 @@ class TimelineUI:
                 del self.points[key]
                 break
 
-    def create_sprite(self, id, x, y, icon, head):
+    def create_sprite(self, id, x, y, icon, dest):
         self.sp_info.append([id,icon,x,y])
         icon=str(icon+".png")
         image = self.image_cache[icon]
-        if head>180:
+        if dest[0]-x>0:
             flip=True
         else:
             flip=False
@@ -155,15 +157,21 @@ class TimelineUI:
     # MAIN UPDATE FUNCTION
     # -------------------------------------------------
 
-    def update(self, screen, events):
+    def update(self, screen, events, warp, timeline_count):
+
+        self.teleport=None
+        
+        if warp:
+            self.current_screen="main"
+            self.clicked_sprite=None
 
         clicked_buttons = []
         mouse = pygame.mouse.get_pos()
         new_click = False
-
+        # EVENT HANDLING
         for event in events:
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if (event.type == pygame.MOUSEBUTTONDOWN) and (event.button==1):
                 if self.current_screen == "main":
                     mx, my = mouse
                     for key,point in self.points.items():
@@ -171,10 +179,19 @@ class TimelineUI:
                             board=int(mx/2)-64
                             self.current_square = (board,key[0][1])
                             self.current_screen = "sub"
+                            if warp:
+                                self.teleport = (board,key[0][1])
+                                self.current_square = (board,timeline_count+1)
+                            else:
+                                self.teleport=None
                     for key,end_square in self.end_squares.items():
                         if pygame.Rect(end_square).collidepoint(mouse):
                             self.current_square = (key[1])
                             self.current_screen = "sub"
+                            if warp:
+                                self.teleport = (key[1])
+                            else:
+                                self.teleport=None
 
                 elif self.current_screen in ["sub","help"]:
                     if pygame.Rect(10,10,100,40).collidepoint(mouse):
@@ -197,6 +214,12 @@ class TimelineUI:
                         break
                 if not new_click and len(clicked_buttons)==0:
                     self.clicked_sprite = None
+            # Movement (Rightclick)
+            if (event.type == pygame.MOUSEBUTTONDOWN) and (event.button==3):
+                if self.current_screen == "sub":
+                    self.movement=(mouse)
+            else:
+                self.movement = None
 
         # ---------------------------
         # DRAW
@@ -285,5 +308,7 @@ class TimelineUI:
             "screen": self.current_screen,
             "square": self.current_square,
             "buttons": clicked_buttons,
-            "sprite_clicked": self.clicked_sprite
+            "sprite_clicked": self.clicked_sprite,
+            "movement": self.movement,
+            "teleport": self.teleport
         }
